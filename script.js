@@ -1,236 +1,350 @@
-var container = document.getElementById('container');
-var playerSpeed = 10;
-var positionX = 0;
-var positionY = 0;
-var player = document.createElement('img'); 
-player.src = 'robot.png'; 
-player.style.height = '200px';
-player.style.position = 'absolute';
-container.appendChild(player); 
-var lastFireTime = 0;
-var fireDelay = 200; 
-var isMusicPlaying = false;
+class Game {
+  static get FIRE_DELAY() {
+    return 300;
+  } // opóźnienie wystrzału
+  static get ENEMY_SPAWN_DELAY() {
+    return 5000;
+  } // opóźnienie pojawiania się wrogów
+  static get STAR_SPAWN_DELAY() {
+    return 200;
+  } // opóźnienie pojawiania się gwiazd
+  static get COLLISION_CHECK_DELAY() {
+    return 10;
+  } // opóźnienie sprawdzania kolizji
+  static get EXPLOSION_DURATION() {
+    return 1000;
+  } // czas trwania animacji eksplozji
 
-function initGame() {
-    positionX = (container.offsetWidth - player.offsetWidth) / 2;
-    positionY = container.offsetHeight - player.offsetHeight;
-    player.style.left = positionX + 'px';
-    player.style.top = positionY + 'px';
-    setInterval(checkCollisions, 10);
-    setInterval(spawnEnemy, 5000);
-    setInterval(spawnStar, 200);
-}
+  constructor(container) {
+    this.container = document.getElementById(container);
+    this.player = new Player(this.container, this);
+    this.enemies = [];
+    this.projectiles = [];
+    this.stars = [];
+    this.isMusicPlaying = false;
+    this.initEventListeners();
+    this.lastFireTime = 0;
+  }
 
-document.addEventListener('keydown', movePlayer);
+  initGame() {
+    this.player.setPosition();
+    setInterval(() => this.checkCollisions(), Game.COLLISION_CHECK_DELAY);
+    setInterval(() => this.spawnEnemy(), Game.ENEMY_SPAWN_DELAY);
+    setInterval(() => this.spawnStar(), Game.STAR_SPAWN_DELAY);
+  }
 
+  movePlayer(e) {
+    this.player.move(e);
+  }
 
-function movePlayer(e) {
-    switch (e.keyCode) {
-        case 37: // lewo
-            positionX -= playerSpeed;
-            break;
-        case 38: // góra
-            positionY -= playerSpeed;
-            break;
-        case 39: // prawo
-            positionX += playerSpeed;
-            break;
-        case 40: // dół
-            positionY += playerSpeed;
-            break;
-        case 32: // space
-            var currentTime = new Date().getTime();
-            if (currentTime - lastFireTime > fireDelay) {
-                fireProjectile();
-                lastFireTime = currentTime;
-            }
-            break;
-    }
-
-    positionX = Math.max(0, Math.min(container.offsetWidth - player.offsetWidth, positionX));
-    positionY = Math.max(0, Math.min(container.offsetHeight - player.offsetHeight, positionY));
-
-    player.style.left = positionX + 'px';
-    player.style.top = positionY + 'px';
-}
-
-function fireProjectile() {
-  var projectile = document.createElement('img');
-  projectile.src = 'weapon.png'; 
-  projectile.style.position = 'absolute';
-  projectile.style.left = positionX + (player.offsetWidth / 2) - 55 + 'px'; // Centrowanie pocisku względem gracza
-  projectile.style.top = positionY - 35 + 'px';
-  projectile.style.height = '50px';
-  container.appendChild(projectile);
-  projectile.className = 'projectile';
-
-  var newFireSound = document.createElement('audio');
-  newFireSound.src = 'lasershot.mp3'; // Podmień na właściwą ścieżkę
-  newFireSound.play();
-  newFireSound.volume = 0.1;
-  newFireSound.onended = function () {
-    newFireSound.remove();
-  };
-
-  var interval = setInterval(function () {
-    var posY = parseInt(projectile.style.top) - 5; // Szybkość poruszania się pocisku
-    if (posY < 0) {
-      clearInterval(interval);
-      if (!projectile.classList.contains('destroyed')) {
-        container.removeChild(projectile);
-      }
-    } else {
-      projectile.style.top = posY + 'px';
-    }
-  }, 20);
-}
-
-document.addEventListener('keydown', movePlayer);
-
-var lastFireTime = 0;
-var fireDelay = 200; // czas w milisekundach, który musi upłynąć przed kolejnym strzałem
-
-var isMusicPlaying = false;
-
-// Funkcja generująca wrogów
-function spawnEnemy() {
-  if (!isMusicPlaying) {
-    var audioElement = document.getElementById('backgroundMusic');
-    if (audioElement.paused) {
-      audioElement.play();
-      isMusicPlaying = true;
+  fireProjectile() {
+    const currentTime = new Date().getTime();
+    if (currentTime - this.lastFireTime > Game.FIRE_DELAY) {
+      // Użycie Game.FIRE_DELAY zamiast this.fireDelay
+      const projectile = this.player.fire();
+      this.projectiles.push(projectile);
+      this.container.appendChild(projectile.element);
+      this.lastFireTime = currentTime;
     }
   }
 
-  var enemy = document.createElement('img');
-  enemy.src = 'spider.png'; // Ścieżka do obrazka wroga
-  enemy.className = 'enemy';
-  enemy.style.position = 'absolute';
-  enemy.style.left = Math.random() * (container.offsetWidth - enemy.offsetWidth) + 'px'; // Losowa pozycja X
-  enemy.style.top = '0px'; // Start na górze kontenera
-  enemy.style.width = '50px';
-  enemy.style.height = '50px';
-  container.appendChild(enemy);
-
-  moveEnemy(enemy);
-}
-
-// Funkcja poruszająca wrogami
-function moveEnemy(enemy) {
-  var moveDown = setInterval(function () {
-    var currentTop = parseInt(enemy.style.top);
-    enemy.style.top = currentTop + 1 + 'px';
-    if (currentTop > container.offsetHeight) {
-      clearInterval(moveDown);
-      enemy.classList.add('destroyed');
-      if (container.contains(enemy)) {
-        container.removeChild(enemy);
+  spawnEnemy() {
+    // Sprawdź, czy muzyka jest już odtwarzana
+    if (!this.isMusicPlaying) {
+      var audioElement = document.getElementById('backgroundMusic');
+      if (audioElement.paused) {
+        audioElement
+          .play()
+          .then(() => {
+            this.isMusicPlaying = true; // Ustawienie flagi, że muzyka już gra
+          })
+          .catch((e) => {
+            console.error('Playback failed:', e);
+            // Możesz tu wyświetlić jakąś informację dla użytkownika, że wymagane jest interakcja
+          });
       }
     }
-  }, 50);
-}
 
-// Oddzielna funkcja do sprawdzania kolizji
-function checkCollisions() {
-  document.querySelectorAll('.enemy:not(.destroyed)').forEach((enemy) => {
-    document.querySelectorAll('.projectile:not(.destroyed)').forEach((projectile) => {
-      if (isColliding(projectile, enemy)) {
-        enemy.classList.add('destroyed');
-        projectile.classList.add('destroyed');
-        var hitSound = document.createElement('audio');
-        hitSound.src = 'explosion.mp3';
-        hitSound.play();
-        hitSound.volume = 0.3;
-        hitSound.onended = function () {
-          hitSound.remove();
-        };
-        showExplosion(parseInt(enemy.style.left), parseInt(enemy.style.top));
-        if (container.contains(enemy)) {
-          container.removeChild(enemy);
+    // Reszta logiki spawnEnemy
+    const enemy = new Enemy(this.container);
+    this.enemies.push(enemy);
+    this.container.appendChild(enemy.element);
+    enemy.move();
+  }
+
+  spawnStar() {
+    const star = new Star(this.container);
+    this.stars.push(star);
+    this.container.appendChild(star.element);
+    star.move();
+  }
+
+  checkCollisions() {
+    this.projectiles.forEach((projectile, pIndex) => {
+      this.enemies.forEach((enemy, eIndex) => {
+        if (this.isColliding(projectile.element, enemy.element)) {
+          this.handleCollision(projectile, enemy, pIndex, eIndex);
         }
-        if (container.contains(projectile)) {
-          container.removeChild(projectile);
-        }
+      });
+    });
+  }
+
+  isColliding(a, b) {
+    const aRect = a.getBoundingClientRect();
+    const bRect = b.getBoundingClientRect();
+    return !(
+      aRect.right < bRect.left ||
+      aRect.left > bRect.right ||
+      aRect.bottom < bRect.top ||
+      aRect.top > bRect.bottom
+    );
+  }
+
+  handleCollision(projectile, enemy, pIndex, eIndex) {
+    projectile.hitEnemy = true;
+    projectile.destroy(); // Zaktualizowane, aby użyć nowej metody
+  
+    // Usuń wroga
+    enemy.element.remove();
+    this.enemies.splice(eIndex, 1);
+  
+    // Odtwórz dźwięk eksplozji i pokaż animację
+    this.playExplosionSound();
+    const explosionX = parseInt(enemy.element.style.left, 10);
+    const explosionY = parseInt(enemy.element.style.top, 10);
+    this.showExplosion(explosionX, explosionY);
+  }
+  
+
+  playExplosionSound() {
+    var explosionSound = document.getElementById('explosionSound');
+    if (explosionSound) {
+      explosionSound.currentTime = 0; // Resetuj czas, jeśli dźwięk został już wcześniej odtworzony
+      explosionSound.play().catch((e) => console.error('Playback failed:', e));
+    }
+  }
+
+  showExplosion(x, y) {
+    const explosion = document.createElement('img');
+    explosion.src = 'explosion.gif'; // Ścieżka do animacji eksplozji
+    explosion.style.position = 'absolute';
+    explosion.style.left = `${x}px`;
+    explosion.style.top = `${y}px`;
+    explosion.width = 64; // Dostosuj rozmiar eksplozji
+    explosion.height = 64;
+    this.container.appendChild(explosion);
+
+    // Usuń GIF eksplozji po określonym czasie
+    setTimeout(() => {
+      this.container.removeChild(explosion);
+    }, 1000); // Zakładamy, że animacja trwa 1000 ms (1 sekundę)
+  }
+
+  initEventListeners() {
+    document.addEventListener('keydown', (e) => {
+      this.movePlayer(e);
+      if (e.keyCode === 32) {
+        // space
+        this.fireProjectile();
       }
     });
-  });
+  }
 }
 
-// Funkcja sprawdzająca kolizję
-function isColliding(a, b) {
-  var aRect = a.getBoundingClientRect();
-  var bRect = b.getBoundingClientRect();
+class Player {
+  constructor(container, gameInstance) {
+    this.container = container;
+    this.game = gameInstance;
+    this.element = document.createElement('img');
+    this.element.src = 'robot.png';
+    this.element.style.position = 'absolute';
+    this.speed = 10;
+    this.container.appendChild(this.element);
+  }
 
-  return !(
-    aRect.right < bRect.left ||
-    aRect.left > bRect.right ||
-    aRect.bottom < bRect.top ||
-    aRect.top > bRect.bottom
-  );
-}
+  setPosition() {
+    this.element.style.height = '200px';
+    const positionX =
+      (this.container.offsetWidth - this.element.offsetWidth) / 2;
+    const positionY = this.container.offsetHeight - this.element.offsetHeight;
+    this.element.style.left = `${positionX}px`;
+    this.element.style.top = `${positionY}px`;
+  }
 
-// Funkcja do pokazywania eksplozji
-function showExplosion(x, y) {
-  var explosion = document.createElement('img');
-  explosion.src = 'explosion.gif'; 
-  explosion.style.position = 'absolute';
-  explosion.style.left = x + 'px';
-  explosion.style.top = y + 'px';
-  explosion.width = 64; // Możesz dostosować rozmiar eksplozji
-  explosion.height = 64;
-  container.appendChild(explosion);
+  move(e) {
+    let positionX = parseInt(this.element.style.left, 10);
+    let positionY = parseInt(this.element.style.top, 10);
 
-  // Usuwamy GIF eksplozji po określonym czasie
-  setTimeout(function () {
-    if (container.contains(explosion)) {
-      container.removeChild(explosion);
+    switch (e.keyCode) {
+      case 37: // lewo
+        positionX -= this.speed;
+        break;
+      case 38: // góra
+        positionY -= this.speed;
+        break;
+      case 39: // prawo
+        positionX += this.speed;
+        break;
+      case 40: // dół
+        positionY += this.speed;
+        break;
     }
-  }, 1000); // Zakładamy, że animacja trwa 1000 ms (1 sekundę)
+
+    positionX = Math.max(
+      0,
+      Math.min(this.container.offsetWidth - this.element.offsetWidth, positionX)
+    );
+    positionY = Math.max(
+      0,
+      Math.min(
+        this.container.offsetHeight - this.element.offsetHeight,
+        positionY
+      )
+    );
+
+    this.element.style.left = `${positionX}px`;
+    this.element.style.top = `${positionY}px`;
+  }
+
+  fire() {
+    // Tworzenie nowego pocisku
+    const projectile = new Projectile(
+      this.container,
+      parseInt(this.element.style.left, 10) + this.element.offsetWidth / 2,
+      parseInt(this.element.style.top, 10),
+      this.game
+    );
+
+    // Odtwarzanie dźwięku wystrzału
+    this.playFireSound();
+
+    return projectile;
+  }
+
+  playFireSound() {
+    const fireSound = new Audio('lasershot.mp3');
+    fireSound.play().catch((e) => console.error('Playback failed:', e));
+    fireSound.onended = function () {
+      fireSound.remove(); // Usuń element audio po zakończeniu odtwarzania
+    };
+  }
 }
 
-function spawnStar() {
-  var star = document.createElement('div');
-  star.className = 'star';
-  star.style.position = 'absolute';
-  star.style.left = Math.random() * container.offsetWidth + 'px';
-  star.style.top = '-5px';
-  star.style.width = '2px';
-  star.style.height = '2px';
-  star.style.backgroundColor = 'white';
-  container.appendChild(star);
+class Projectile {
+  constructor(container, startX, startY, gameInstance) {
+    this.container = container;
+    this.game = gameInstance;
+    this.element = document.createElement('img');
+    this.element.src = 'weapon.png';
+    this.element.style.position = 'absolute';
+    this.element.style.left = `${startX - 25}px`;
+    this.element.style.top = `${startY}px`;
+    this.element.style.height = '50px';
+    this.hitEnemy = false;
+    this.move();
+  }
 
-  moveStar(star);
-}
+  move() {
+    const interval = setInterval(() => {
+      let posY = parseInt(this.element.style.top) - 5;
+      if (posY < 0) {
+        clearInterval(interval);
+        this.destroy();
+      } else {
+        this.element.style.top = `${posY}px`;
+      }
+    }, 20);
+  }
 
-function moveStar(star) {
-  var moveDown = setInterval(function () {
-    var currentTop = parseInt(star.style.top);
-    star.style.top = currentTop + 2 + 'px';
-    if (currentTop > container.offsetHeight) {
-      clearInterval(moveDown);
-      container.removeChild(star);
+  destroy() {
+    if (this.element.parentNode === this.container) {
+      this.container.removeChild(this.element);
     }
-  }, 50);
+    // Usuwamy pocisk z listy pocisków w instancji gry
+    const index = this.game.projectiles.indexOf(this);
+    if (index > -1) {
+      this.game.projectiles.splice(index, 1);
+    }
+  }
 }
 
-//start gry
 
+class Enemy {
+  constructor(container) {
+    this.container = container;
+    this.element = document.createElement('img');
+    this.element.src = 'spider.png';
+    this.element.className = 'enemy';
+    this.element.style.position = 'absolute';
+    this.element.style.left = `${
+      Math.random() * (container.offsetWidth - 50)
+    }px`; // Losowa pozycja X, zakładając szerokość wroga 50px
+    this.element.style.top = '0px';
+    this.element.style.width = '50px';
+    this.element.style.height = '50px';
+    this.move();
+   }
+
+   move() {
+    const moveDown = setInterval(() => {
+      let currentTop = parseInt(this.element.style.top);
+      this.element.style.top = `${currentTop + 1}px`;
+      if (currentTop > this.container.offsetHeight) {
+        clearInterval(moveDown);
+        // Sprawdź, czy element nadal jest dzieckiem kontenera przed usunięciem
+        if (this.element.parentNode === this.container) {
+          this.container.removeChild(this.element);
+        }
+      }
+    }, 50);
+  }
+  
+}
+
+class Star {
+  constructor(container) {
+    this.container = container;
+    this.element = document.createElement('div');
+    this.element.className = 'star';
+    this.element.style.position = 'absolute';
+    this.element.style.left = `${Math.random() * container.offsetWidth}px`;
+    this.element.style.top = '-5px';
+    this.element.style.width = '2px';
+    this.element.style.height = '2px';
+    this.element.style.backgroundColor = 'white';
+    this.move();
+  }
+
+  move() {
+    const moveDown = setInterval(() => {
+      let currentTop = parseInt(this.element.style.top);
+      this.element.style.top = `${currentTop + 2}px`;
+      if (currentTop > this.container.offsetHeight) {
+        clearInterval(moveDown);
+        // Sprawdź, czy element jest dzieckiem kontenera przed usunięciem
+        if (this.container.contains(this.element)) {
+          this.container.removeChild(this.element);
+        }
+      }
+    }, 50);
+  }
+}
+
+// Przykład użycia
 document.getElementById('startScreen').addEventListener('click', startGame);
-
-// Dodanie obsługi naciśnięcia klawisza Enter
-document.addEventListener('keydown', function(event) {
+document.addEventListener('keydown', function (event) {
   if (event.key === 'Enter') {
     startGame();
   }
 });
 
+let game; // Zmienna do przechowywania instancji gry
+
 function startGame() {
-  // Sprawdzenie, czy element nie jest już ukryty
   var startScreen = document.getElementById('startScreen');
   if (startScreen.style.display !== 'none') {
     startScreen.style.display = 'none'; // Ukrywa ekran startowy
-    initGame(); // Funkcja inicjująca grę
+    game = new Game('container'); // Tworzy instancję gry, kiedy zaczynamy grę
+    game.initGame(); // Rozpoczyna grę
   }
 }
-
-
