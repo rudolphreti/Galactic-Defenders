@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Sterowanie kropką</title>
+    <meta charset="UTF-8">
+
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0; /* Usuwa domyślny margines, aby kontener mógł być prawidłowo wyśrodkowany */
+        background-color: black;
+      }
+
+      #container {
+        width: 1500px;
+        height: 800px;
+        position: relative;
+        background-color: black;
+      }
+
+      #dot {
+        width: 10px;
+        height: 10px;
+        
+        position: absolute;
+      }
+      #startScreen {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0);
+        color: white;
+        display: flex;
+        flex-direction: column; /* Zmieniamy układ elementów na kolumnowy */
+        justify-content: center;
+        align-items: center;
+        font-size: 24px;
+        cursor: pointer; /* Dodaje wskaźnik kursora, aby pokazać, że można kliknąć */
+        z-index: 1;
+      }
+
+      #startScreen img {
+        max-height: 600px; /* Maksymalna wysokość obrazu */
+        width: auto; /* Zachowaj proporcje obrazu */
+      }
+
+      #startScreen div {
+        margin-top: 20px; /* Dodajemy odstęp między obrazem a tekstem */
+      }
+    </style>
+  </head>
+  <body>
+    <div id="startScreen">
+      <img src="image.webp" />
+      <div>Kliknij myszą lub naciśnij Enter, aby rozpocząć grę</div>
+    </div>
+
+    <div id="container"></div>
+    <audio loop id="backgroundMusic">
+      <source src="audio.m4a" type="audio/mpeg" />
+    </audio>
+    <audio id="fireSound" src="lasershot.mp3"></audio>
+    <audio id="introMusic" src="intro.m4a"></audio>
+
+    <script src="script.js"></script>
+  </body>
+</html>
