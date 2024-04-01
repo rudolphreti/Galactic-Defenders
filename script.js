@@ -152,21 +152,28 @@ class Game {
 }
 
 class Player {
+  static get SPEED() { return 10; }
+  static get HEIGHT() { return 200; } // zmiana na wartość liczbową dla jednolitości
+  static get WIDTH() { return 100; } // przykładowa szerokość, dopasuj wg potrzeb
+  static get IMAGE_SRC() { return 'robot.png'; }
+  static get FIRE_SOUND_SRC() { return 'lasershot.mp3'; }
+
   constructor(container, gameInstance) {
     this.container = container;
     this.game = gameInstance;
     this.element = document.createElement('img');
-    this.element.src = 'robot.png';
+    this.element.src = Player.IMAGE_SRC;
     this.element.style.position = 'absolute';
-    this.speed = 10;
+    this.element.style.height = `${Player.HEIGHT}px`;
+    // Można dodać ustawienie szerokości, jeśli jest potrzebne
+    // this.element.style.width = `${Player.WIDTH}px`;
     this.container.appendChild(this.element);
   }
 
   setPosition() {
-    this.element.style.height = '200px';
-    const positionX =
-      (this.container.offsetWidth - this.element.offsetWidth) / 2;
-    const positionY = this.container.offsetHeight - this.element.offsetHeight;
+    // Ustawienie pozycji bazujące na zdefiniowanych wysokości i szerokości
+    const positionX = (this.container.offsetWidth - Player.WIDTH) / 2;
+    const positionY = this.container.offsetHeight - Player.HEIGHT;
     this.element.style.left = `${positionX}px`;
     this.element.style.top = `${positionY}px`;
   }
@@ -177,58 +184,51 @@ class Player {
 
     switch (e.keyCode) {
       case 37: // lewo
-        positionX -= this.speed;
+        positionX -= Player.SPEED;
         break;
       case 38: // góra
-        positionY -= this.speed;
+        positionY -= Player.SPEED;
         break;
       case 39: // prawo
-        positionX += this.speed;
+        positionX += Player.SPEED;
         break;
       case 40: // dół
-        positionY += this.speed;
+        positionY += Player.SPEED;
         break;
     }
 
-    positionX = Math.max(
-      0,
-      Math.min(this.container.offsetWidth - this.element.offsetWidth, positionX)
-    );
-    positionY = Math.max(
-      0,
-      Math.min(
-        this.container.offsetHeight - this.element.offsetHeight,
-        positionY
-      )
-    );
+    // Użycie Player.WIDTH i Player.HEIGHT zamiast bezpośredniego dostępu do element.style
+    positionX = Math.max(0, Math.min(this.container.offsetWidth - Player.WIDTH, positionX));
+    positionY = Math.max(0, Math.min(this.container.offsetHeight - Player.HEIGHT, positionY));
 
     this.element.style.left = `${positionX}px`;
     this.element.style.top = `${positionY}px`;
   }
 
   fire() {
-    // Tworzenie nowego pocisku
     const projectile = new Projectile(
       this.container,
-      parseInt(this.element.style.left, 10) + this.element.offsetWidth / 2,
+      parseInt(this.element.style.left, 10) + Player.WIDTH / 2, // Centrowanie pocisku
       parseInt(this.element.style.top, 10),
       this.game
     );
 
-    // Odtwarzanie dźwięku wystrzału
     this.playFireSound();
 
     return projectile;
   }
 
   playFireSound() {
-    const fireSound = new Audio('lasershot.mp3');
+    const fireSound = new Audio(Player.FIRE_SOUND_SRC);
     fireSound.play().catch((e) => console.error('Playback failed:', e));
     fireSound.onended = function () {
       fireSound.remove(); // Usuń element audio po zakończeniu odtwarzania
     };
   }
+  
+  // Reszta klasy Player...
 }
+
 
 class Projectile {
   constructor(container, startX, startY, gameInstance) {
