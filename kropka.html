@@ -60,15 +60,20 @@
         top: 0;
         left: 0;
         z-index: 2;
+        justify-content: center; /* Wyśrodkowanie w poziomie */
+        align-items: center; /* Wyśrodkowanie w pionie */
+        flex-direction: column; /* Elementy ułożone kolumnowo */
       }
 
       #gameOverScreen img {
-        margin-top: 20%;
+        max-height: 500px; /* Maksymalna wysokość obrazu */
+        width: auto; /* Zachowaj proporcje obrazu */
       }
 
       #gameOverScreen p {
         color: white;
         font-size: 2em;
+        margin-top: 20px; /* Odstęp od obrazu */
       }
     </style>
   </head>
@@ -80,10 +85,10 @@
 
     <div id="container"></div>
     <div id="gameOverScreen">
-      <img src="gameover.webp" alt="Game Over">
+      <img src="gameover.webp" alt="Game Over" />
       <p>Koniec gry</p>
     </div>
-    
+
     <audio loop id="backgroundMusic">
       <source src="audio.m4a" type="audio/mpeg" />
     </audio>

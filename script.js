@@ -87,7 +87,41 @@ class Game {
         }
       });
     });
+
+    // Nowa logika sprawdzająca kolizje wroga z graczem
+    this.enemies.forEach((enemy, index) => {
+      if (this.isColliding(enemy.element, this.player.element)) {
+        this.handlePlayerCollision();
+        this.enemies.splice(index, 1); // Usunięcie wroga po kolizji
+      }
+    });
   }
+
+  handlePlayerCollision() {
+    // Usunięcie gracza
+    this.player.element.remove();
+
+    // Odtworzenie animacji wybuchu
+    const explosionX = parseInt(this.player.element.style.left, 10);
+    const explosionY = parseInt(this.player.element.style.top, 10);
+    this.showExplosion(explosionX, explosionY);
+
+    // Odtworzenie dźwięku wybuchu
+    this.playExplosionSound();
+
+    // Opóźnienie wyświetlenia ekranu końca gry
+    setTimeout(() => {
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        gameOverScreen.style.display = 'flex';
+        gameOverScreen.style.opacity = 0;
+        gameOverScreen.style.transition = 'opacity 1s';
+        // Animacja przejścia od transparencji 0 do 1
+        setTimeout(() => {
+            gameOverScreen.style.opacity = 1;
+        }, 10); // Małe opóźnienie, aby zapewnić, że przejście jest widoczne
+    }, 3000); // Czas opóźnienia przed pokazaniem ekranu końca gry
+}
+
 
   isColliding(a, b) {
     const aRect = a.getBoundingClientRect();
@@ -103,18 +137,17 @@ class Game {
   handleCollision(projectile, enemy, pIndex, eIndex) {
     projectile.hitEnemy = true;
     projectile.destroy(); // Zaktualizowane, aby użyć nowej metody
-  
+
     // Usuń wroga
     enemy.element.remove();
     this.enemies.splice(eIndex, 1);
-  
+
     // Odtwórz dźwięk eksplozji i pokaż animację
     this.playExplosionSound();
     const explosionX = parseInt(enemy.element.style.left, 10);
     const explosionY = parseInt(enemy.element.style.top, 10);
     this.showExplosion(explosionX, explosionY);
   }
-  
 
   playExplosionSound() {
     const explosionSound = document.getElementById('explosionSound');
@@ -152,11 +185,21 @@ class Game {
 }
 
 class Player {
-  static get SPEED() { return 10; }
-  static get HEIGHT() { return 200; } // zmiana na wartość liczbową dla jednolitości
-  static get WIDTH() { return 100; } // przykładowa szerokość, dopasuj wg potrzeb
-  static get IMAGE_SRC() { return 'robot.png'; }
-  static get FIRE_SOUND_SRC() { return 'lasershot.mp3'; }
+  static get SPEED() {
+    return 10;
+  }
+  static get HEIGHT() {
+    return 200;
+  } // zmiana na wartość liczbową dla jednolitości
+  static get WIDTH() {
+    return 100;
+  } // przykładowa szerokość, dopasuj wg potrzeb
+  static get IMAGE_SRC() {
+    return 'robot.png';
+  }
+  static get FIRE_SOUND_SRC() {
+    return 'lasershot.mp3';
+  }
 
   constructor(container, gameInstance) {
     this.container = container;
@@ -198,8 +241,14 @@ class Player {
     }
 
     // Użycie Player.WIDTH i Player.HEIGHT zamiast bezpośredniego dostępu do element.style
-    positionX = Math.max(0, Math.min(this.container.offsetWidth - Player.WIDTH, positionX));
-    positionY = Math.max(0, Math.min(this.container.offsetHeight - Player.HEIGHT, positionY));
+    positionX = Math.max(
+      0,
+      Math.min(this.container.offsetWidth - Player.WIDTH, positionX)
+    );
+    positionY = Math.max(
+      0,
+      Math.min(this.container.offsetHeight - Player.HEIGHT, positionY)
+    );
 
     this.element.style.left = `${positionX}px`;
     this.element.style.top = `${positionY}px`;
@@ -227,13 +276,22 @@ class Player {
   }
 }
 
-
 class Projectile {
-  static get SPEED() { return 5; } // prędkość ruchu pocisku w pikselach
-  static get MOVE_INTERVAL() { return 20; } // interwał ruchu pocisku w milisekundach
-  static get WIDTH() { return 30; } // szerokość pocisku
-  static get HEIGHT() { return 50; } // wysokość pocisku
-  static get IMAGE_SRC() { return 'weapon.png'; } // ścieżka do obrazka pocisku
+  static get SPEED() {
+    return 5;
+  } // prędkość ruchu pocisku w pikselach
+  static get MOVE_INTERVAL() {
+    return 20;
+  } // interwał ruchu pocisku w milisekundach
+  static get WIDTH() {
+    return 30;
+  } // szerokość pocisku
+  static get HEIGHT() {
+    return 50;
+  } // wysokość pocisku
+  static get IMAGE_SRC() {
+    return 'weapon.png';
+  } // ścieżka do obrazka pocisku
 
   constructor(container, startX, startY, gameInstance) {
     this.container = container;
@@ -242,8 +300,8 @@ class Projectile {
     this.element.src = Projectile.IMAGE_SRC;
     this.element.style.position = 'absolute';
     // Centrowanie pocisku względem pozycji wystrzału
-    this.element.style.left = `${startX - Projectile.WIDTH / 2}px`; 
-    this.element.style.top = `${startY}px`;
+    this.element.style.left = `${startX - Projectile.WIDTH - 10}px`;
+    this.element.style.top = `${startY - 30}px`;
     this.element.style.width = `${Projectile.WIDTH}px`;
     this.element.style.height = `${Projectile.HEIGHT}px`;
     this.hitEnemy = false;
@@ -274,15 +332,25 @@ class Projectile {
   }
 }
 
-
-
 class Enemy {
-  static get SPEED() { return 1; }
-  static get MOVE_INTERVAL() { return 50; }
-  static get WIDTH() { return 50; }
-  static get HEIGHT() { return 50; }
-  static get IMAGE_SRC() { return 'spider.png'; }
-  static get MOVE_AREA() { return 100; } // Nowa stała określająca maksymalny obszar ruchu
+  static get SPEED() {
+    return 1;
+  }
+  static get MOVE_INTERVAL() {
+    return 50;
+  }
+  static get WIDTH() {
+    return 50;
+  }
+  static get HEIGHT() {
+    return 50;
+  }
+  static get IMAGE_SRC() {
+    return 'spider.png';
+  }
+  static get MOVE_AREA() {
+    return 100;
+  } // Nowa stała określająca maksymalny obszar ruchu
 
   constructor(container) {
     this.container = container;
@@ -311,10 +379,16 @@ class Enemy {
       currentLeft += Enemy.SPEED * this.directionX;
 
       // Sprawdzenie, czy wróg nie wyszedł poza ustalony obszar ruchu
-      if (currentTop <= 0 || currentTop >= this.container.offsetHeight - Enemy.HEIGHT) {
+      if (
+        currentTop <= 0 ||
+        currentTop >= this.container.offsetHeight - Enemy.HEIGHT
+      ) {
         this.directionY *= -1; // Zmiana kierunku na przeciwny
       }
-      if (currentLeft <= this.initialX - Enemy.MOVE_AREA || currentLeft >= this.initialX + Enemy.MOVE_AREA) {
+      if (
+        currentLeft <= this.initialX - Enemy.MOVE_AREA ||
+        currentLeft >= this.initialX + Enemy.MOVE_AREA
+      ) {
         this.directionX *= -1; // Zmiana kierunku na przeciwny
       }
 
@@ -324,13 +398,19 @@ class Enemy {
   }
 }
 
-
-
 class Star {
-  static get SPEED() { return 2; } // Prędkość, z jaką gwiazdy poruszają się w dół ekranu
-  static get MOVE_INTERVAL() { return 50; } // Interwał aktualizacji pozycji gwiazd
-  static get SIZE() { return 2; } // Rozmiar gwiazdy w pikselach
-  static get COLOR() { return 'white'; } // Kolor gwiazdy
+  static get SPEED() {
+    return 2;
+  } // Prędkość, z jaką gwiazdy poruszają się w dół ekranu
+  static get MOVE_INTERVAL() {
+    return 50;
+  } // Interwał aktualizacji pozycji gwiazd
+  static get SIZE() {
+    return 2;
+  } // Rozmiar gwiazdy w pikselach
+  static get COLOR() {
+    return 'white';
+  } // Kolor gwiazdy
 
   constructor(container) {
     this.container = container;
@@ -359,7 +439,6 @@ class Star {
     }, Star.MOVE_INTERVAL);
   }
 }
-
 
 // Przykład użycia
 document.getElementById('startScreen').addEventListener('click', startGame);
