@@ -51,7 +51,7 @@ class Game {
   spawnEnemy() {
     // Sprawdź, czy muzyka jest już odtwarzana
     if (!this.isMusicPlaying) {
-      var audioElement = document.getElementById('backgroundMusic');
+      const audioElement = document.getElementById('backgroundMusic');
       if (audioElement.paused) {
         audioElement
           .play()
@@ -117,7 +117,7 @@ class Game {
   
 
   playExplosionSound() {
-    var explosionSound = document.getElementById('explosionSound');
+    const explosionSound = document.getElementById('explosionSound');
     if (explosionSound) {
       explosionSound.currentTime = 0; // Resetuj czas, jeśli dźwięk został już wcześniej odtworzony
       explosionSound.play().catch((e) => console.error('Playback failed:', e));
@@ -225,35 +225,41 @@ class Player {
       fireSound.remove(); // Usuń element audio po zakończeniu odtwarzania
     };
   }
-  
-  // Reszta klasy Player...
 }
 
 
 class Projectile {
+  static get SPEED() { return 5; } // prędkość ruchu pocisku w pikselach
+  static get MOVE_INTERVAL() { return 20; } // interwał ruchu pocisku w milisekundach
+  static get WIDTH() { return 30; } // szerokość pocisku
+  static get HEIGHT() { return 50; } // wysokość pocisku
+  static get IMAGE_SRC() { return 'weapon.png'; } // ścieżka do obrazka pocisku
+
   constructor(container, startX, startY, gameInstance) {
     this.container = container;
     this.game = gameInstance;
     this.element = document.createElement('img');
-    this.element.src = 'weapon.png';
+    this.element.src = Projectile.IMAGE_SRC;
     this.element.style.position = 'absolute';
-    this.element.style.left = `${startX - 25}px`;
+    // Centrowanie pocisku względem pozycji wystrzału
+    this.element.style.left = `${startX - Projectile.WIDTH / 2}px`; 
     this.element.style.top = `${startY}px`;
-    this.element.style.height = '50px';
+    this.element.style.width = `${Projectile.WIDTH}px`;
+    this.element.style.height = `${Projectile.HEIGHT}px`;
     this.hitEnemy = false;
     this.move();
   }
 
   move() {
     const interval = setInterval(() => {
-      let posY = parseInt(this.element.style.top) - 5;
+      let posY = parseInt(this.element.style.top) - Projectile.SPEED;
       if (posY < 0) {
         clearInterval(interval);
         this.destroy();
       } else {
         this.element.style.top = `${posY}px`;
       }
-    }, 20);
+    }, Projectile.MOVE_INTERVAL);
   }
 
   destroy() {
@@ -269,66 +275,91 @@ class Projectile {
 }
 
 
+
 class Enemy {
+  static get SPEED() { return 1; }
+  static get MOVE_INTERVAL() { return 50; }
+  static get WIDTH() { return 50; }
+  static get HEIGHT() { return 50; }
+  static get IMAGE_SRC() { return 'spider.png'; }
+  static get MOVE_AREA() { return 100; } // Nowa stała określająca maksymalny obszar ruchu
+
   constructor(container) {
     this.container = container;
     this.element = document.createElement('img');
-    this.element.src = 'spider.png';
+    this.element.src = Enemy.IMAGE_SRC;
     this.element.className = 'enemy';
     this.element.style.position = 'absolute';
-    this.element.style.left = `${
-      Math.random() * (container.offsetWidth - 50)
-    }px`; // Losowa pozycja X, zakładając szerokość wroga 50px
+    this.initialX = Math.random() * (container.offsetWidth - Enemy.WIDTH);
+    this.element.style.left = `${this.initialX}px`;
     this.element.style.top = '0px';
-    this.element.style.width = '50px';
-    this.element.style.height = '50px';
+    this.element.style.width = `${Enemy.WIDTH}px`;
+    this.element.style.height = `${Enemy.HEIGHT}px`;
+    this.directionX = Math.random() < 0.5 ? -1 : 1; // Losowy kierunek ruchu w poziomie
+    this.directionY = Math.random() < 0.5 ? -1 : 1; // Losowy kierunek ruchu w pionie
     this.move();
-   }
-
-   move() {
-    const moveDown = setInterval(() => {
-      let currentTop = parseInt(this.element.style.top);
-      this.element.style.top = `${currentTop + 1}px`;
-      if (currentTop > this.container.offsetHeight) {
-        clearInterval(moveDown);
-        // Sprawdź, czy element nadal jest dzieckiem kontenera przed usunięciem
-        if (this.element.parentNode === this.container) {
-          this.container.removeChild(this.element);
-        }
-      }
-    }, 50);
   }
-  
+
+  move() {
+    const moveEnemy = setInterval(() => {
+      let currentTop = parseInt(this.element.style.top, 10);
+      let currentLeft = parseInt(this.element.style.left, 10);
+
+      // Ruch w pionie
+      currentTop += Enemy.SPEED * this.directionY;
+      // Ruch w poziomie
+      currentLeft += Enemy.SPEED * this.directionX;
+
+      // Sprawdzenie, czy wróg nie wyszedł poza ustalony obszar ruchu
+      if (currentTop <= 0 || currentTop >= this.container.offsetHeight - Enemy.HEIGHT) {
+        this.directionY *= -1; // Zmiana kierunku na przeciwny
+      }
+      if (currentLeft <= this.initialX - Enemy.MOVE_AREA || currentLeft >= this.initialX + Enemy.MOVE_AREA) {
+        this.directionX *= -1; // Zmiana kierunku na przeciwny
+      }
+
+      this.element.style.top = `${currentTop}px`;
+      this.element.style.left = `${currentLeft}px`;
+    }, Enemy.MOVE_INTERVAL);
+  }
 }
 
+
+
 class Star {
+  static get SPEED() { return 2; } // Prędkość, z jaką gwiazdy poruszają się w dół ekranu
+  static get MOVE_INTERVAL() { return 50; } // Interwał aktualizacji pozycji gwiazd
+  static get SIZE() { return 2; } // Rozmiar gwiazdy w pikselach
+  static get COLOR() { return 'white'; } // Kolor gwiazdy
+
   constructor(container) {
     this.container = container;
     this.element = document.createElement('div');
     this.element.className = 'star';
     this.element.style.position = 'absolute';
-    this.element.style.left = `${Math.random() * container.offsetWidth}px`;
-    this.element.style.top = '-5px';
-    this.element.style.width = '2px';
-    this.element.style.height = '2px';
-    this.element.style.backgroundColor = 'white';
+    this.element.style.left = `${Math.random() * container.offsetWidth}px`; // Losowa pozycja X
+    this.element.style.top = '-5px'; // Start z góry poza ekranem
+    this.element.style.width = `${Star.SIZE}px`;
+    this.element.style.height = `${Star.SIZE}px`;
+    this.element.style.backgroundColor = Star.COLOR;
     this.move();
   }
 
   move() {
     const moveDown = setInterval(() => {
       let currentTop = parseInt(this.element.style.top);
-      this.element.style.top = `${currentTop + 2}px`;
+      this.element.style.top = `${currentTop + Star.SPEED}px`;
       if (currentTop > this.container.offsetHeight) {
         clearInterval(moveDown);
-        // Sprawdź, czy element jest dzieckiem kontenera przed usunięciem
-        if (this.container.contains(this.element)) {
+        // Usuwanie gwiazdy, jeśli wyjdzie poza kontener
+        if (this.element.parentNode === this.container) {
           this.container.removeChild(this.element);
         }
       }
-    }, 50);
+    }, Star.MOVE_INTERVAL);
   }
 }
+
 
 // Przykład użycia
 document.getElementById('startScreen').addEventListener('click', startGame);
@@ -341,7 +372,7 @@ document.addEventListener('keydown', function (event) {
 let game; // Zmienna do przechowywania instancji gry
 
 function startGame() {
-  var startScreen = document.getElementById('startScreen');
+  const startScreen = document.getElementById('startScreen');
   if (startScreen.style.display !== 'none') {
     startScreen.style.display = 'none'; // Ukrywa ekran startowy
     game = new Game('container'); // Tworzy instancję gry, kiedy zaczynamy grę
