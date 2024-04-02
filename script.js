@@ -1,19 +1,24 @@
+import { Star } from './star.js';
+
 class Game {
   static get FIRE_DELAY() {
     return 300;
-  } // opóźnienie wystrzału
+  }
   static get ENEMY_SPAWN_DELAY() {
     return 5000;
-  } // opóźnienie pojawiania się wrogów
+  }
   static get STAR_SPAWN_DELAY() {
     return 200;
-  } // opóźnienie pojawiania się gwiazd
+  }
   static get COLLISION_CHECK_DELAY() {
     return 10;
-  } // opóźnienie sprawdzania kolizji
+  }
   static get EXPLOSION_DURATION() {
     return 1000;
-  } // czas trwania animacji eksplozji
+  }
+  static get FIRST_ENEMY_DELAY() {
+    return 18000; // 17 sekund opóźnienia dla pierwszego wroga
+  }
 
   constructor(container) {
     this.container = document.getElementById(container);
@@ -22,6 +27,7 @@ class Game {
     this.projectiles = [];
     this.stars = [];
     this.isMusicPlaying = false;
+    this.isFirstStarSpawned = false; // Dodanie flagi dla pierwszej gwiazdy
     this.initEventListeners();
     this.lastFireTime = 0;
   }
@@ -29,8 +35,39 @@ class Game {
   initGame() {
     this.player.setPosition();
     setInterval(() => this.checkCollisions(), Game.COLLISION_CHECK_DELAY);
-    setInterval(() => this.spawnEnemy(), Game.ENEMY_SPAWN_DELAY);
+    // Usunięcie automatycznego spawnu wrogów tutaj
     setInterval(() => this.spawnStar(), Game.STAR_SPAWN_DELAY);
+  }
+
+  spawnStar() {
+    const star = new Star(this.container);
+    this.stars.push(star);
+    this.container.appendChild(star.element);
+    star.move();
+
+    if (!this.isFirstStarSpawned) {
+      this.playBackgroundMusic(); // Odtwórz muzykę tła
+      this.isFirstStarSpawned = true; // Ustawienie flagi
+
+      setTimeout(() => {
+        this.spawnEnemy(); // Pierwsze spawnowanie wroga
+        setInterval(() => this.spawnEnemy(), Game.ENEMY_SPAWN_DELAY); // Kontynuacja spawnowania wrogów
+      }, Game.FIRST_ENEMY_DELAY);
+    }
+  }
+
+  playBackgroundMusic() {
+    const audioElement = document.getElementById('backgroundMusic');
+    if (audioElement.paused) {
+      audioElement
+        .play()
+        .then(() => {
+          this.isMusicPlaying = true;
+        })
+        .catch((e) => {
+          console.error('Playback failed:', e);
+        });
+    }
   }
 
   movePlayer(e) {
@@ -49,34 +86,11 @@ class Game {
   }
 
   spawnEnemy() {
-    // Sprawdź, czy muzyka jest już odtwarzana
-    if (!this.isMusicPlaying) {
-      const audioElement = document.getElementById('backgroundMusic');
-      if (audioElement.paused) {
-        audioElement
-          .play()
-          .then(() => {
-            this.isMusicPlaying = true; // Ustawienie flagi, że muzyka już gra
-          })
-          .catch((e) => {
-            console.error('Playback failed:', e);
-            // Możesz tu wyświetlić jakąś informację dla użytkownika, że wymagane jest interakcja
-          });
-      }
-    }
-
     // Reszta logiki spawnEnemy
     const enemy = new Enemy(this.container);
     this.enemies.push(enemy);
     this.container.appendChild(enemy.element);
     enemy.move();
-  }
-
-  spawnStar() {
-    const star = new Star(this.container);
-    this.stars.push(star);
-    this.container.appendChild(star.element);
-    star.move();
   }
 
   checkCollisions() {
@@ -111,17 +125,16 @@ class Game {
 
     // Opóźnienie wyświetlenia ekranu końca gry
     setTimeout(() => {
-        const gameOverScreen = document.getElementById('gameOverScreen');
-        gameOverScreen.style.display = 'flex';
-        gameOverScreen.style.opacity = 0;
-        gameOverScreen.style.transition = 'opacity 1s';
-        // Animacja przejścia od transparencji 0 do 1
-        setTimeout(() => {
-            gameOverScreen.style.opacity = 1;
-        }, 10); // Małe opóźnienie, aby zapewnić, że przejście jest widoczne
+      const gameOverScreen = document.getElementById('gameOverScreen');
+      gameOverScreen.style.display = 'flex';
+      gameOverScreen.style.opacity = 0;
+      gameOverScreen.style.transition = 'opacity 1s';
+      // Animacja przejścia od transparencji 0 do 1
+      setTimeout(() => {
+        gameOverScreen.style.opacity = 1;
+      }, 10); // Małe opóźnienie, aby zapewnić, że przejście jest widoczne
     }, 3000); // Czas opóźnienia przed pokazaniem ekranu końca gry
-}
-
+  }
 
   isColliding(a, b) {
     const aRect = a.getBoundingClientRect();
@@ -398,49 +411,6 @@ class Enemy {
   }
 }
 
-class Star {
-  static get SPEED() {
-    return 2;
-  } // Prędkość, z jaką gwiazdy poruszają się w dół ekranu
-  static get MOVE_INTERVAL() {
-    return 50;
-  } // Interwał aktualizacji pozycji gwiazd
-  static get SIZE() {
-    return 2;
-  } // Rozmiar gwiazdy w pikselach
-  static get COLOR() {
-    return 'white';
-  } // Kolor gwiazdy
-
-  constructor(container) {
-    this.container = container;
-    this.element = document.createElement('div');
-    this.element.className = 'star';
-    this.element.style.position = 'absolute';
-    this.element.style.left = `${Math.random() * container.offsetWidth}px`; // Losowa pozycja X
-    this.element.style.top = '-5px'; // Start z góry poza ekranem
-    this.element.style.width = `${Star.SIZE}px`;
-    this.element.style.height = `${Star.SIZE}px`;
-    this.element.style.backgroundColor = Star.COLOR;
-    this.move();
-  }
-
-  move() {
-    const moveDown = setInterval(() => {
-      let currentTop = parseInt(this.element.style.top);
-      this.element.style.top = `${currentTop + Star.SPEED}px`;
-      if (currentTop > this.container.offsetHeight) {
-        clearInterval(moveDown);
-        // Usuwanie gwiazdy, jeśli wyjdzie poza kontener
-        if (this.element.parentNode === this.container) {
-          this.container.removeChild(this.element);
-        }
-      }
-    }, Star.MOVE_INTERVAL);
-  }
-}
-
-// Przykład użycia
 document.getElementById('startScreen').addEventListener('click', startGame);
 document.addEventListener('keydown', function (event) {
   if (event.key === 'Enter') {
