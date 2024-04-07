@@ -5,7 +5,7 @@ class Game {
     return 300;
   }
   static get ENEMY_SPAWN_DELAY() {
-    return 5000;
+    return 1000;
   }
   static get STAR_SPAWN_DELAY() {
     return 200;
@@ -28,8 +28,47 @@ class Game {
     this.stars = [];
     this.isMusicPlaying = false;
     this.isFirstStarSpawned = false; // Dodanie flagi dla pierwszej gwiazdy
+    this.keysPressed = {};
     this.initEventListeners();
     this.lastFireTime = 0;
+    this.enemiesShot = 0; // Dodajemy nową właściwość
+  }
+
+  initEventListeners() {
+    document.addEventListener('keydown', (e) => {
+      this.keysPressed[e.keyCode] = true;
+    });
+
+    document.addEventListener('keyup', (e) => {
+      delete this.keysPressed[e.keyCode];
+    });
+
+    requestAnimationFrame(this.updateGame.bind(this)); // Poprawka tutaj
+  }
+
+  updateGame() {
+    if (Object.keys(this.keysPressed).length > 0) {
+      this.handlePlayerActions();
+    }
+    requestAnimationFrame(this.updateGame.bind(this)); // I tutaj
+  }
+
+  handlePlayerActions() {
+    // Obsługa ruchu i strzałów na podstawie stanu klawiszy
+    if (
+      this.keysPressed[37] ||
+      this.keysPressed[38] ||
+      this.keysPressed[39] ||
+      this.keysPressed[40]
+    ) {
+      this.player.move(this.keysPressed);
+    }
+    if (
+      this.keysPressed[32] &&
+      new Date().getTime() - this.lastFireTime > Game.FIRE_DELAY
+    ) {
+      this.fireProjectile();
+    }
   }
 
   initGame() {
@@ -68,10 +107,6 @@ class Game {
           console.error('Playback failed:', e);
         });
     }
-  }
-
-  movePlayer(e) {
-    this.player.move(e);
   }
 
   fireProjectile() {
@@ -154,12 +189,19 @@ class Game {
     // Usuń wroga
     enemy.element.remove();
     this.enemies.splice(eIndex, 1);
+    this.enemiesShot++; // Zwiększamy licznik zestrzelonych wrogów
+    this.updateScoreCounter(); // Aktualizujemy licznik na ekranie
 
     // Odtwórz dźwięk eksplozji i pokaż animację
     this.playExplosionSound();
     const explosionX = parseInt(enemy.element.style.left, 10);
     const explosionY = parseInt(enemy.element.style.top, 10);
     this.showExplosion(explosionX, explosionY);
+  }
+
+  updateScoreCounter() {
+    const scoreCounter = document.getElementById('scoreCounter');
+    scoreCounter.textContent = `Zestrzelono: ${this.enemiesShot}`;
   }
 
   playExplosionSound() {
@@ -184,16 +226,6 @@ class Game {
     setTimeout(() => {
       this.container.removeChild(explosion);
     }, 1000); // Zakładamy, że animacja trwa 1000 ms (1 sekundę)
-  }
-
-  initEventListeners() {
-    document.addEventListener('keydown', (e) => {
-      this.movePlayer(e);
-      if (e.keyCode === 32) {
-        // space
-        this.fireProjectile();
-      }
-    });
   }
 }
 
@@ -234,26 +266,15 @@ class Player {
     this.element.style.top = `${positionY}px`;
   }
 
-  move(e) {
+  move(keysPressed) {
     let positionX = parseInt(this.element.style.left, 10);
     let positionY = parseInt(this.element.style.top, 10);
 
-    switch (e.keyCode) {
-      case 37: // lewo
-        positionX -= Player.SPEED;
-        break;
-      case 38: // góra
-        positionY -= Player.SPEED;
-        break;
-      case 39: // prawo
-        positionX += Player.SPEED;
-        break;
-      case 40: // dół
-        positionY += Player.SPEED;
-        break;
-    }
+    if (keysPressed[37]) positionX -= Player.SPEED; // lewo
+    if (keysPressed[39]) positionX += Player.SPEED; // prawo
+    if (keysPressed[38]) positionY -= Player.SPEED; // góra
+    if (keysPressed[40]) positionY += Player.SPEED; // dół
 
-    // Użycie Player.WIDTH i Player.HEIGHT zamiast bezpośredniego dostępu do element.style
     positionX = Math.max(
       0,
       Math.min(this.container.offsetWidth - Player.WIDTH, positionX)

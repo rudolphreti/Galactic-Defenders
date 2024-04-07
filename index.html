@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Sterowanie kropką</title>
+    <title>Galactic Defenders</title>
     <meta charset="UTF-8" />
 
     <style>
@@ -75,6 +75,16 @@
         font-size: 2em;
         margin-top: 20px; /* Odstęp od obrazu */
       }
+
+      /* Dodaj na końcu sekcji <style> */
+      #scoreCounter {
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+        color: white;
+        font-size: 40px;
+        z-index: 3; /* Upewnij się, że licznik jest widoczny nad innymi elementami */
+      }
     </style>
   </head>
   <body>
@@ -88,6 +98,7 @@
       <img src="gameover.webp" alt="Game Over" />
       <p>Koniec gry</p>
     </div>
+    <div id="scoreCounter">Zestrzelono: 0</div>
 
     <audio loop id="backgroundMusic">
       <source src="intro.m4a" type="audio/mpeg" />
