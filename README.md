@@ -22,22 +22,9 @@ Space Battle is a dynamic browser-based game where players control a spaceship a
 - CSS3
 - JavaScript ES6
 
-## Setup
-
-Clone this repository to your local machine:
-
-```bash
-git clone https://yourrepositorylink.com
-cd space-battle-game
-```
-
 ## Running the Game
 
 To run the game, open the `index.html` file in any modern web browser.
-
-```plaintext
-open index.html
-```
 
 ## Game Controls
 
@@ -59,5 +46,4 @@ open index.html
 Contributions are welcome! Please fork the repository and open a pull request with your improvements.
 
 ## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+MIT
