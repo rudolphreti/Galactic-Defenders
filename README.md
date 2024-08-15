@@ -5,7 +5,7 @@
 
 Space Battle is a dynamic browser-based game where players control a spaceship and navigate through a field of stars and enemies. Players must dodge enemy attacks and destroy them with the ship's laser cannons while collecting stars for extra points.
 
-![Screen](screen.png)
+[![Screen](screen.png)](https://srv19859.microhost.com.pl/galacticdefenders/index.html)
 
 [DEMO](https://srv19859.microhost.com.pl/galacticdefenders/index.html)
 
