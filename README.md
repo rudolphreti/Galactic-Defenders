@@ -44,6 +44,10 @@ To run the game, open the `index.html` file in any modern web browser.
 - `styles.css`: Contains all the styling for the game elements.
 - `index.html`: The main HTML document.
 
+## To do
+* migration to Blazor
+* addition of touchscreen controls
+
 ## Contributing
 
 Contributions are welcome! Please fork the repository and open a pull request with your improvements.
