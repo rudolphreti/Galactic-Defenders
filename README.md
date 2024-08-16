@@ -46,6 +46,7 @@ To run the game, open the `index.html` file in any modern web browser.
 
 ## To do
 * migration to Blazor
+* customizing the skins of the hero and enemies
 * addition of touchscreen controls
 
 ## Contributing
